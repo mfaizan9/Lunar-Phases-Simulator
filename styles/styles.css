@@ -1,0 +1,331 @@
+/* ===========================================================================
+   Lunar Phase Simulator - sim-specific styles (layered ON TOP of kl-unl.css)
+   The KL-UNL foundation files are never edited; this file holds every
+   sim-specific rule (layout, canvases, custom slider polish, breakpoints).
+   ========================================================================== */
+
+:root {
+  --lps-gap: 0.5rem;
+  --lps-space-color: #000000;
+  --lps-readout-size: 1.05rem;
+}
+
+/* Predictable box model for all sim content (padding never grows width).
+   Scoped to the sim so the foundation's own assumptions are untouched. */
+.lps-layout,
+.lps-layout *,
+.lps-layout *::before,
+.lps-layout *::after {
+  box-sizing: border-box;
+}
+
+/* Larger, zoom-friendly base type for this sim (>=1.125rem floor for body). */
+.app-shell {
+  font-size: 1.125rem;
+  padding-bottom: 1rem;
+}
+
+/* Two-column shell via named areas: orbit (tall) + controls beneath on the
+   left; moon phase (top) + horizon (below) on the right. Flat DOM order is
+   orbit -> phase -> horizon -> controls, which is also the mobile reading
+   order once the grid collapses to a single column. */
+.lps-layout {
+  gap: var(--lps-gap);
+  padding: var(--lps-gap);
+  /* stretch grid items to fill their areas so the left stack (orbit + controls)
+     and the right stack (moon phase + horizon) end up the same total height and
+     their bottom edges line up */
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  grid-template-areas:
+    "orbit    phase"
+    "orbit    horizon"
+    "controls horizon";
+}
+.lps-area-orbit    { grid-area: orbit; }
+.lps-area-phase    { grid-area: phase; }
+.lps-area-horizon  { grid-area: horizon; }
+.lps-area-controls { grid-area: controls; }
+
+.lps-panel {
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel__heading {
+  font-size: 1.15rem;
+  border-bottom: 1px solid var(--border-color, #767676);
+}
+
+/* ---- Canvas panels ------------------------------------------------------ */
+
+.lps-canvas-wrap,
+.lps-moon-wrap,
+.lps-horizon-wrap {
+  position: relative;
+  line-height: 0;
+}
+
+.lps-canvas-wrap {
+  padding: 0.5rem;
+  background: var(--lps-space-color);
+  border-radius: 0 0 6px 6px;
+}
+
+/* The orbit stage keeps its internal coordinate system; CSS scales it. */
+.lps-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  touch-action: none;   /* draggable: don't scroll/zoom the page on touch */
+  outline: none;
+}
+
+/* Invisible keyboard proxies sit over the canvas; focus ring is drawn on
+   the canvas itself, but keep a native ring too for robustness. */
+.lps-proxy-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.lps-handle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+}
+.lps-handle:focus-visible {
+  outline: none;   /* the canvas paints a visible focus indicator for these */
+}
+
+.lps-diagram-desc {
+  margin: 0.6rem 1rem 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  min-height: 2.4em;
+}
+
+/* ---- Moon Phase panel --------------------------------------------------- */
+
+.lps-phase-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.lps-phase-select-row {
+  display: block;
+  width: 100%;
+  max-width: 15rem;
+  margin: 0;
+}
+
+.lps-phase-select {
+  width: 100%;
+  min-height: 2.5rem;
+  font-size: 1rem;
+  padding: 0.3rem 0.4rem;
+  color: var(--foreground-color, #1a1a1a);
+  background: var(--background-color, #fff);
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 4px;
+}
+
+.lps-moon-wrap {
+  background: var(--lps-space-color);
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.lps-phase-canvas {
+  display: block;
+  width: 200px;
+  height: 200px;
+  max-width: 46vw;
+}
+
+.lps-horizon-canvas {
+  display: block;
+  width: 280px;
+  height: 280px;
+  max-width: 60vw;
+  touch-action: none;   /* rotatable: don't scroll/zoom the page while dragging */
+  cursor: grab;
+}
+.lps-horizon-canvas:active { cursor: grabbing; }
+
+/* ---- Readouts: aligned, consistent ------------------------------------- */
+
+.lps-readout {
+  margin: 0.15rem 0;
+  font-size: var(--lps-readout-size);
+  text-align: center;
+  line-height: 1.35;
+}
+.lps-readout--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.lps-readout--stacked span:first-child { font-weight: 600; }
+.lps-readout--inline {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.lps-readout--inline span:first-child { font-weight: 600; }
+
+/* ---- Horizon panel ------------------------------------------------------ */
+
+.lps-horizon-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.4rem;
+}
+.lps-horizon-wrap {
+  background: var(--lps-space-color);
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+/* ---- Hide / show buttons ------------------------------------------------ */
+
+.lps-hide-row {
+  justify-content: center;
+  padding: 0.5rem 1rem 0.75rem;
+  margin-top: auto;
+}
+.lps-hide-row .button {
+  min-width: 6rem;
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 4px;
+  background: #f0f0f0;
+}
+.lps-hide-row .button:hover,
+.lps-hide-row .button:focus-visible { background: #e2e2e2; }
+
+/* When a panel's content is hidden, keep the panel + its show button. */
+.lps-hidden { display: none !important; }
+
+/* ---- Bottom-left controls row ------------------------------------------ */
+
+.lps-controls-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--lps-gap);
+  align-items: stretch;
+}
+
+.lps-anim-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem 1rem;
+}
+.lps-anim-btnrow { justify-content: flex-start; }
+.lps-anim-btnrow .button {
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 4px;
+  background: #f0f0f0;
+  min-width: 11rem;
+  font-weight: 600;
+}
+.lps-anim-btnrow .button:hover,
+.lps-anim-btnrow .button:focus-visible { background: #e2e2e2; }
+
+.lps-rate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.lps-rate label { font-weight: normal; }
+
+/* Custom-polished native slider (still a real <input type=range>). */
+.lps-slider {
+  width: 100%;
+  max-width: 18rem;
+  min-height: 2.75rem;   /* comfortable 44px touch target */
+  cursor: pointer;
+  accent-color: var(--button-background-color, #005a9c);
+}
+
+.lps-increment {
+  padding: 0;
+  margin: 0;
+}
+.lps-inc-row {
+  display: grid;
+  grid-template-columns: 4.5rem 2.75rem 2.75rem;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.lps-inc-name { text-align: right; }
+.lps-step {
+  border: 1px solid var(--border-color, #767676);
+  border-radius: 4px;
+  background: #f0f0f0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.35rem 0;
+}
+.lps-step:hover,
+.lps-step:focus-visible { background: #e2e2e2; }
+
+.lps-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem 1rem;
+}
+.lps-options .control-choice { min-height: 2.25rem; }
+.lps-options label { font-size: 1.05rem; }
+
+/* ===========================================================================
+   Responsive: iPad down to phone portrait.
+   Below the foundation's 56rem breakpoint everything stacks in reading order.
+   ========================================================================== */
+@media (max-width: 56rem) {
+  .lps-layout {
+    grid-template-columns: 1fr;
+    /* collapse named areas: items stack in DOM order
+       (orbit, moon phase, horizon, controls) */
+    grid-template-areas:
+      "orbit"
+      "phase"
+      "horizon"
+      "controls";
+  }
+  .lps-controls-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lps-phase-canvas { max-width: 70vw; }
+  .lps-horizon-canvas { max-width: 80vw; }
+}
+
+@media (max-width: 30rem) {
+  .app-shell { font-size: 1.0625rem; }
+  .lps-controls-row { grid-template-columns: 1fr; }
+  .lps-inc-row { grid-template-columns: 4rem 2.75rem 2.75rem; }
+  .lps-phase-canvas { max-width: 82vw; }
+  .lps-horizon-canvas { max-width: 88vw; }
+}
+
+/* Respect reduced-motion: the JS also swaps continuous animation for the
+   instantaneous end-state, but disable any incidental transitions too. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

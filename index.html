@@ -1,0 +1,168 @@
+<!--
+  Lunar Phase Simulator - HTML5 / KL-UNL accessible rebuild
+  Behavioral port of the Nebraska Astronomy Applet Project (NAAP) Flash simulator.
+  Served over HTTP only (the masthead fetches foundation/contents.json). See README.md.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar Phase Simulator</title>
+
+<link href="foundation/kl-unl.css" type="text/css" rel="stylesheet" media="all">
+<link href="styles/styles.css" type="text/css" rel="stylesheet" media="all">
+
+<div class="app-shell">
+  <kl-unl-masthead sim-id="lunarphasesimulator" json-url="foundation/contents.json"></kl-unl-masthead>
+
+  <!-- Single polite live region: announces state changes on commit (with units). -->
+  <p id="sr-status" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+
+  <main class="app-layout lps-layout" id="app-layout">
+
+      <!-- Orbit / geometry visualization -->
+      <section class="panel lps-panel lps-area-orbit" aria-labelledby="orbit-heading">
+        <h2 class="panel__heading" id="orbit-heading">Orbit View</h2>
+        <div class="panel__canvas-wrap lps-canvas-wrap">
+          <canvas id="orbit-canvas" class="lps-canvas" width="640" height="560"
+                  role="application"
+                  aria-label="Orbit view of the moon around the earth, lit by sunlight from the left.">
+          </canvas>
+
+          <!-- Keyboard-operable proxies for the two draggable canvas objects. -->
+          <div class="lps-proxy-layer" aria-hidden="false">
+            <div id="moon-handle" class="lps-handle" tabindex="0" role="slider"
+                 aria-label="Moon position in orbit"
+                 aria-valuemin="0" aria-valuemax="360" aria-valuenow="0"
+                 aria-valuetext="New Moon, phase angle 0 degrees">
+            </div>
+            <div id="earth-handle" class="lps-handle" tabindex="0" role="slider"
+                 aria-label="Earth rotation, sets observer time of day"
+                 aria-valuemin="0" aria-valuemax="24" aria-valuenow="12"
+                 aria-valuetext="Observer time 12:00 pm">
+            </div>
+          </div>
+        </div>
+        <p class="panel__help lps-diagram-desc" id="orbit-desc"></p>
+      </section>
+
+      <!-- Moon Phase panel -->
+      <section class="panel lps-panel lps-area-phase" aria-labelledby="phase-heading">
+        <h2 class="panel__heading" id="phase-heading">Moon Phase</h2>
+        <div class="lps-phase-body" id="phase-body">
+          <div class="control-row lps-phase-select-row">
+            <label for="phase-select" class="sr-only">Select a named moon phase</label>
+            <select id="phase-select" class="lps-phase-select">
+              <option value="0">New Moon</option>
+              <option value="45">Waxing Crescent</option>
+              <option value="90">First Quarter</option>
+              <option value="135">Waxing Gibbous</option>
+              <option value="180">Full Moon</option>
+              <option value="225">Waning Gibbous</option>
+              <option value="270">Third Quarter</option>
+              <option value="315">Waning Crescent</option>
+            </select>
+          </div>
+          <div class="lps-moon-wrap">
+            <canvas id="phase-canvas" class="lps-phase-canvas" width="200" height="200"
+                    role="img" aria-label="Appearance of the moon as seen from earth."></canvas>
+          </div>
+          <p class="lps-readout" id="pct-illum">0.0% illuminated</p>
+          <p class="lps-readout lps-readout--stacked">
+            <span>time since new moon:</span>
+            <span id="time-since-new">0 hours</span>
+          </p>
+        </div>
+        <div class="button-row lps-hide-row">
+          <button type="button" id="phase-hide" class="button" aria-pressed="false">hide</button>
+        </div>
+      </section>
+
+      <!-- Horizon Diagram panel -->
+      <section class="panel lps-panel lps-area-horizon" aria-labelledby="horizon-heading">
+        <h2 class="panel__heading" id="horizon-heading">Horizon Diagram</h2>
+        <div class="lps-horizon-body" id="horizon-body">
+          <div class="lps-horizon-wrap">
+            <canvas id="horizon-canvas" class="lps-horizon-canvas" width="280" height="280"
+                    tabindex="0" role="application"
+                    aria-roledescription="rotatable sky view"
+                    aria-label="The observer's sky, showing the sun and moon above or below the horizon. Drag, or use the arrow keys, to rotate the view. Home resets the view."></canvas>
+          </div>
+          <p class="lps-readout lps-readout--inline">
+            <span>observer's local time:</span>
+            <span id="local-time">12:00 pm</span>
+          </p>
+        </div>
+        <div class="button-row lps-hide-row">
+          <button type="button" id="horizon-hide" class="button" aria-pressed="false">hide</button>
+        </div>
+      </section>
+
+      <!-- Animation/Time controls + Diagram options (spans the bottom-left area) -->
+      <div class="lps-controls-row lps-area-controls">
+
+        <section class="panel lps-panel" aria-labelledby="anim-heading">
+          <h2 class="panel__heading" id="anim-heading">Animation and Time Controls</h2>
+          <div class="lps-anim-body">
+            <div class="button-row lps-anim-btnrow">
+              <button type="button" id="anim-toggle" class="button">start animation</button>
+            </div>
+
+            <div class="lps-rate">
+              <label for="rate-slider" id="rate-label">animation rate:</label>
+              <input type="range" id="rate-slider" class="control-row__slider lps-slider"
+                     min="0" max="1000" value="200" step="1"
+                     aria-describedby="rate-label"
+                     aria-valuetext="Animation rate 0.3 days per second">
+            </div>
+
+            <fieldset class="control-fieldset lps-increment">
+              <legend class="control-fieldset__legend">increment animation:</legend>
+              <div class="lps-inc-row">
+                <span class="lps-inc-name" id="inc-day">day:</span>
+                <button type="button" class="button lps-step" data-step="day" data-dir="-1"
+                        aria-label="Decrease by one day">&minus;</button>
+                <button type="button" class="button lps-step" data-step="day" data-dir="1"
+                        aria-label="Increase by one day">+</button>
+              </div>
+              <div class="lps-inc-row">
+                <span class="lps-inc-name" id="inc-hour">hour:</span>
+                <button type="button" class="button lps-step" data-step="hour" data-dir="-1"
+                        aria-label="Decrease by one hour">&minus;</button>
+                <button type="button" class="button lps-step" data-step="hour" data-dir="1"
+                        aria-label="Increase by one hour">+</button>
+              </div>
+              <div class="lps-inc-row">
+                <span class="lps-inc-name" id="inc-min">minute:</span>
+                <button type="button" class="button lps-step" data-step="minute" data-dir="-1"
+                        aria-label="Decrease by one minute">&minus;</button>
+                <button type="button" class="button lps-step" data-step="minute" data-dir="1"
+                        aria-label="Increase by one minute">+</button>
+              </div>
+            </fieldset>
+          </div>
+        </section>
+
+        <section class="panel lps-panel" aria-labelledby="opts-heading">
+          <h2 class="panel__heading" id="opts-heading">Diagram Options</h2>
+          <fieldset class="control-fieldset lps-options">
+            <legend class="sr-only">Diagram display options</legend>
+            <div class="control-choice">
+              <input type="checkbox" id="opt-angle">
+              <label for="opt-angle">show angle</label>
+            </div>
+            <div class="control-choice">
+              <input type="checkbox" id="opt-landmark">
+              <label for="opt-landmark">show lunar landmark</label>
+            </div>
+            <div class="control-choice">
+              <input type="checkbox" id="opt-ticks">
+              <label for="opt-ticks">show time tickmarks</label>
+            </div>
+          </fieldset>
+        </section>
+      </div>
+  </main>
+</div>
+
+<script src="foundation/kl-unl-masthead.js"></script>
+<script src="foundation/kl-unl.js"></script>
+<script src="simulation.js"></script>
